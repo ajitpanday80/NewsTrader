@@ -3,7 +3,7 @@ FastAPI server for serving trading signals to frontend/website.
 Provides REST API endpoints for accessing active signals and historical data.
 """
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, List, Dict, Any
 from datetime import datetime
@@ -11,6 +11,7 @@ from loguru import logger
 
 from src.cleanup_service import cleanup_service
 from src.config import settings
+from src.auth import verify_api_key, get_api_key_info
 
 
 # Create FastAPI app
@@ -37,13 +38,15 @@ async def root():
         "name": "NewsTrader Signal API",
         "version": "1.0.0",
         "description": "Real-time trading signals based on market news analysis",
+        "authentication": get_api_key_info(),
         "endpoints": {
-            "GET /signals": "Get active trading signals",
-            "GET /signals/summary": "Get summary of active signals",
-            "GET /signals/history": "Get historical archived signals",
-            "GET /signals/backups": "List available backup dates",
-            "GET /health": "Health check endpoint"
-        }
+            "GET /signals": "Get active trading signals (requires API key)",
+            "GET /signals/summary": "Get summary of active signals (requires API key)",
+            "GET /signals/history": "Get historical archived signals (requires API key)",
+            "GET /signals/backups": "List available backup dates (requires API key)",
+            "GET /health": "Health check endpoint (public)"
+        },
+        "note": "All endpoints except /health require authentication via X-API-Key header"
     }
 
 
@@ -58,12 +61,15 @@ async def health_check():
 
 
 @app.get("/signals")
-async def get_active_signals():
+async def get_active_signals(api_key: str = Depends(verify_api_key)):
     """
     Get active trading signals with TTL information.
 
     Returns only signals that haven't expired yet.
     Each signal includes time_remaining_minutes field.
+
+    Requires:
+        X-API-Key header with valid API key
 
     Returns:
         Active signals with metadata, or empty response if no active signals
@@ -90,11 +96,14 @@ async def get_active_signals():
 
 
 @app.get("/signals/summary")
-async def get_signals_summary():
+async def get_signals_summary(api_key: str = Depends(verify_api_key)):
     """
     Get summary of active signals without full article details.
 
     Returns condensed information for quick overview.
+
+    Requires:
+        X-API-Key header with valid API key
 
     Returns:
         Summary statistics and high-level insights
@@ -129,13 +138,17 @@ async def get_signals_summary():
 
 @app.get("/signals/by-market")
 async def get_signals_by_market(
-    market: str = Query(..., description="Market name (e.g., US, India, Crypto, Forex, Global)")
+    market: str = Query(..., description="Market name (e.g., US, India, Crypto, Forex, Global)"),
+    api_key: str = Depends(verify_api_key)
 ):
     """
     Get active signals filtered by market.
 
     Args:
         market: Market name to filter by
+
+    Requires:
+        X-API-Key header with valid API key
 
     Returns:
         Signals for specified market
@@ -181,13 +194,17 @@ async def get_signals_by_market(
 
 @app.get("/signals/by-exchange")
 async def get_signals_by_exchange(
-    exchange: str = Query(..., description="Exchange name (e.g., NYSE, NASDAQ, NSE, BSE)")
+    exchange: str = Query(..., description="Exchange name (e.g., NYSE, NASDAQ, NSE, BSE)"),
+    api_key: str = Depends(verify_api_key)
 ):
     """
     Get active signals filtered by exchange.
 
     Args:
         exchange: Exchange name to filter by
+
+    Requires:
+        X-API-Key header with valid API key
 
     Returns:
         Signals for specified exchange
@@ -233,13 +250,17 @@ async def get_signals_by_exchange(
 
 @app.get("/signals/by-signal-type")
 async def get_signals_by_type(
-    signal_type: str = Query(..., description="Signal type: BUY, SELL, or HOLD")
+    signal_type: str = Query(..., description="Signal type: BUY, SELL, or HOLD"),
+    api_key: str = Depends(verify_api_key)
 ):
     """
     Get active signals filtered by signal type.
 
     Args:
         signal_type: Signal type to filter by (BUY, SELL, HOLD)
+
+    Requires:
+        X-API-Key header with valid API key
 
     Returns:
         Signals of specified type
@@ -290,9 +311,12 @@ async def get_signals_by_type(
 
 
 @app.get("/signals/backups")
-async def list_backup_dates():
+async def list_backup_dates(api_key: str = Depends(verify_api_key)):
     """
     List all available backup dates.
+
+    Requires:
+        X-API-Key header with valid API key
 
     Returns:
         List of dates with available backups
@@ -325,7 +349,8 @@ async def list_backup_dates():
 @app.get("/signals/history")
 async def get_historical_signals(
     date: Optional[str] = Query(None, description="Date in YYYY-MM-DD format"),
-    limit: int = Query(10, ge=1, le=100, description="Number of results to return")
+    limit: int = Query(10, ge=1, le=100, description="Number of results to return"),
+    api_key: str = Depends(verify_api_key)
 ):
     """
     Get historical archived signals.
@@ -333,6 +358,9 @@ async def get_historical_signals(
     Args:
         date: Optional date to filter by (YYYY-MM-DD format)
         limit: Maximum number of results to return (1-100)
+
+    Requires:
+        X-API-Key header with valid API key
 
     Returns:
         List of archived signal analyses
@@ -368,9 +396,12 @@ async def get_historical_signals(
 
 
 @app.get("/stats")
-async def get_statistics():
+async def get_statistics(api_key: str = Depends(verify_api_key)):
     """
     Get overall statistics about signals and backups.
+
+    Requires:
+        X-API-Key header with valid API key
 
     Returns:
         Statistics about active signals, backups, and system status

@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     # API Server
     api_host: str = "0.0.0.0"
     api_port: int = 8000
+    api_key: str  # Required API key for authentication
 
     # Logging
     log_level: str = "INFO"

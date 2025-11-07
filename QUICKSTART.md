@@ -20,11 +20,17 @@ Edit `.env` and add your API keys:
 ```env
 ALPHA_VANTAGE_API_KEY=your_key_here
 GROQ_API_KEY=your_key_here
+API_KEY=your_secure_api_key_here
 ```
 
 **Get API Keys:**
 - Alpha Vantage: https://www.alphavantage.co/support/#api-key (FREE)
 - Groq: https://console.groq.com/keys (FREE)
+
+**Generate Secure API Key:**
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
 
 ### 3. Run the System
 
@@ -41,17 +47,17 @@ Open browser: http://localhost:8000
 
 ### Get Active Signals
 ```bash
-curl http://localhost:8000/signals
+curl -H "X-API-Key: your-api-key-here" http://localhost:8000/signals
 ```
 
 ### Get Summary Only
 ```bash
-curl http://localhost:8000/signals/summary
+curl -H "X-API-Key: your-api-key-here" http://localhost:8000/signals/summary
 ```
 
 ### Filter by Market
 ```bash
-curl http://localhost:8000/signals/by-market?market=Crypto
+curl -H "X-API-Key: your-api-key-here" http://localhost:8000/signals/by-market?market=Crypto
 ```
 
 ## 🔍 What's Happening?
@@ -67,7 +73,11 @@ curl http://localhost:8000/signals/by-market?market=Crypto
 ```javascript
 // Fetch and display signals
 async function getSignals() {
-  const response = await fetch('http://localhost:8000/signals');
+  const response = await fetch('http://localhost:8000/signals', {
+    headers: {
+      'X-API-Key': 'your-api-key-here'
+    }
+  });
   const data = await response.json();
 
   if (data.status === 'success') {
@@ -151,13 +161,18 @@ API_PORT=8001
 
 3. **Check system stats**:
    ```bash
-   curl http://localhost:8000/stats
+   curl -H "X-API-Key: your-api-key-here" http://localhost:8000/stats
    ```
 
 4. **View historical signals**:
    ```bash
-   curl http://localhost:8000/signals/history?limit=5
+   curl -H "X-API-Key: your-api-key-here" http://localhost:8000/signals/history?limit=5
    ```
+
+5. **Keep your API key secure**:
+   - Never commit `.env` to git (already in `.gitignore`)
+   - Use environment variables in production
+   - Rotate keys regularly
 
 ---
 

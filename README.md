@@ -115,8 +115,17 @@ NEWS_FETCH_INTERVAL_MINUTES=5
 API_HOST=0.0.0.0
 API_PORT=8000
 
+# API Authentication (IMPORTANT: Change this to a secure key)
+API_KEY=your-secure-api-key-here
+
 # Logging
 LOG_LEVEL=INFO
+```
+
+**⚠️ IMPORTANT: Generate a strong API key for production:**
+```bash
+# Generate a secure random API key
+python -c "import secrets; print(secrets.token_urlsafe(32))"
 ```
 
 ---
@@ -158,6 +167,39 @@ Serves existing signals via REST API.
 ```
 http://localhost:8000
 ```
+
+### 🔐 Authentication
+
+**All endpoints (except `/` and `/health`) require API key authentication.**
+
+Include your API key in the `X-API-Key` header:
+
+```bash
+curl -H "X-API-Key: your-api-key-here" http://localhost:8000/signals
+```
+
+**JavaScript Example:**
+```javascript
+fetch('http://localhost:8000/signals', {
+  headers: {
+    'X-API-Key': 'your-api-key-here'
+  }
+})
+```
+
+**Python Example:**
+```python
+import requests
+
+headers = {'X-API-Key': 'your-api-key-here'}
+response = requests.get('http://localhost:8000/signals', headers=headers)
+```
+
+**Error Responses:**
+- `401 Unauthorized` - Missing API key
+- `403 Forbidden` - Invalid API key
+
+---
 
 ### Available Endpoints
 
@@ -434,8 +476,12 @@ API_PORT=8000     # Port number
 ### Example: Fetch Active Signals
 
 ```javascript
-// Fetch active signals
-fetch('http://localhost:8000/signals')
+// Fetch active signals with API key authentication
+fetch('http://localhost:8000/signals', {
+  headers: {
+    'X-API-Key': 'your-api-key-here'
+  }
+})
   .then(response => response.json())
   .then(data => {
     if (data.status === 'success') {
@@ -459,7 +505,11 @@ fetch('http://localhost:8000/signals')
 
 ```javascript
 // Get only Indian stocks
-fetch('http://localhost:8000/signals/by-market?market=India')
+fetch('http://localhost:8000/signals/by-market?market=India', {
+  headers: {
+    'X-API-Key': 'your-api-key-here'
+  }
+})
   .then(response => response.json())
   .then(data => {
     console.log(`Found ${data.data.count} signals for Indian market`);
@@ -470,7 +520,11 @@ fetch('http://localhost:8000/signals/by-market?market=India')
 
 ```javascript
 // Get only BUY signals
-fetch('http://localhost:8000/signals/by-signal-type?signal_type=BUY')
+fetch('http://localhost:8000/signals/by-signal-type?signal_type=BUY', {
+  headers: {
+    'X-API-Key': 'your-api-key-here'
+  }
+})
   .then(response => response.json())
   .then(data => {
     data.data.news_articles.forEach(article => {
